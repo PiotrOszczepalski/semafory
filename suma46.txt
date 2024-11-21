@@ -1,0 +1,129 @@
+import java.util.concurrent.Semaphore;
+
+public class SemaphoresFirstValue_1 {
+
+    private static final int DELAY = 1;
+
+    private static final Semaphore sem1 = new Semaphore(0, true);
+    private static final Semaphore sem2 = new Semaphore(0, true);
+    private static final Semaphore ResultSem = new Semaphore(0, true);
+    private static final Semaphore EndSem = new Semaphore(0, true);
+
+    private static int A = 0;
+    private static int B = 0;
+    private static int C = 3;
+
+    // 46
+
+    public static void main(String[] args) {
+        new P1().start();
+        new P2().start();
+        new P3().start();
+        new P4().start();
+    }
+
+    private static final class P1 extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(DELAY);
+
+                A = 10;
+
+                B = B + 5;
+
+                sem1.release();
+                EndSem.acquire();
+
+                C = C + A;
+
+
+                Thread.sleep(DELAY);
+                System.out.println("\nThread P1: I'm done...");
+
+            } catch (InterruptedException ex) {
+                System.out.println("Oops...");
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private static final class P2 extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(DELAY);
+                sem1.acquire();
+
+                B = B + C;
+
+                sem2.release();
+                EndSem.acquire();
+
+                A = A + B;
+
+
+                Thread.sleep(DELAY);
+                System.out.println("\nThread P2: I'm done...");
+
+            } catch (InterruptedException ex) {
+                System.out.println("Oops...");
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private static final class P3 extends Thread {
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(DELAY);
+                sem2.acquire();
+
+                C = B + 10;
+
+                A = 2 * A;
+
+                ResultSem.release();
+                EndSem.acquire();
+
+                B = B + A;
+
+
+                Thread.sleep(DELAY);
+                System.out.println("\nThread P3: I'm done...");
+
+            } catch (InterruptedException ex) {
+                System.out.println("Oops...");
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private static final class P4 extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(DELAY);
+
+                ResultSem.acquire();
+                System.out.println("Sum result: " + A + " + " + B + " + " + C + " = " + (A + B + C));
+                EndSem.release(3);
+
+                Thread.sleep(DELAY);
+                System.out.println("\nThread P4: I'm done...");
+
+            } catch (InterruptedException ex) {
+                System.out.println("Oops...");
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+}

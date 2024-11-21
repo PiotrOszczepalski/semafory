@@ -1,0 +1,78 @@
+import java.util.concurrent.Semaphore;
+
+public class SemaphoresCABCB {
+    // Deklaracja trzech semaforów
+    private final Semaphore semaA = new Semaphore(0); // A zablokowane
+    private final Semaphore semaB = new Semaphore(0); // B zablokowane
+    private final Semaphore semaC = new Semaphore(1); // C zaczyna cykl
+
+    // Liczba iteracji (przykład)
+    private final int iterations = 10;
+
+    // Wątek dla C
+    private void printC() {
+        for (int i = 0; i < iterations * 2; i++) { // Dwa razy, bo C występuje dwa razy w cyklu
+            try {
+                semaC.acquire(); // Czeka na swoją kolej
+                System.out.print("C");
+                if (i % 2 == 0) { // Pierwsze C w cyklu odblokowuje A
+                    semaA.release();
+                } else { // Drugie C w cyklu odblokowuje B
+                    semaB.release();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    // Wątek dla A
+    private void printA() {
+        for (int i = 0; i < iterations; i++) {
+            try {
+                semaA.acquire(); // Czeka na swoją kolej
+                System.out.print("A");
+                semaB.release(); // Odblokowuje pierwsze B
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    // Wątek dla B
+    private void printB() {
+        for (int i = 0; i < iterations * 2; i++) { // Dwa razy, bo B występuje dwa razy w cyklu
+            try {
+                semaB.acquire(); // Czeka na swoją kolej
+                System.out.print("B");
+                if (i % 2 == 0) { // Pierwsze B odblokowuje C
+                    semaC.release();
+                } else { // Drugie B zamyka cykl i wraca do pierwszego C
+                    semaC.release();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+    }
+
+    // Metoda startująca wątki
+    public void start() {
+        Thread c = new Thread(this::printC);
+        Thread a = new Thread(this::printA);
+        Thread b = new Thread(this::printB);
+
+        c.start();
+        a.start();
+        b.start();
+    }
+
+    // Metoda główna
+    public static void main(String[] args) {
+        SemaphoresCABCB semaphores = new SemaphoresCABCB();
+        semaphores.start();
+    }
+}
